@@ -40,7 +40,7 @@ static const struct option longopts[] = {
 /* print help to the terminal */
 static void show_help(int err) {
 	fprintf(err == 1 ? stderr : stdout,
-			"Usage: %s [options] <output dump file> ...\n" \
+			"Usage: %s [options] <output dump file> <output vectors dump file> ...\n" \
 			"\n" \
 			"Default output dump file: ./dump.bin\n" \
 			"\n" \
