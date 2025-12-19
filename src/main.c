@@ -321,7 +321,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 /* main function */
 int main(int argc, char *argv[]) {
 	if(argv[0] == NULL)
-		program_name = "spush";
+		program_name = "ramdump-49xx";
 	else
 		program_name = argv[0];
 
