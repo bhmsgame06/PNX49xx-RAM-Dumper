@@ -18,7 +18,7 @@ static bool verbose = false;
 static char *serial_device = "/dev/ttyUSB0";
 /* output dump file */
 static char *output_dump_file = "./ram_dump.bin";
-/* output IRQ/FIQ vectors dump file */
+/* output FIQ vectors dump file */
 static char *output_vectors_dump_file = "./vector_dump.bin";
 /* microsecond delay between block transfer */
 static long blk_delay = 0;
@@ -235,8 +235,8 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 
 	} while(total_read < read_length);
 
-	/* dumping IRQ/FIQ vectors */
-	printf("\n\033[0;36m-->\033[0m Dumping IRQ/FIQ vectors...\n\n");
+	/* dumping FIQ vectors */
+	printf("\n\033[0;36m-->\033[0m Dumping FIQ vectors...\n\n");
 
 	total_read = 0;
 	read_length = 0x2000;
@@ -280,7 +280,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 				return 'D';
 	
 			default:
-				fprintf(stderr, "Wrong check status response (IRQ/FIQ vectors dumping): 0x%02X\n", b);
+				fprintf(stderr, "Wrong check status response (FIQ vectors dumping): 0x%02X\n", b);
 				close(serial_fd);
 				return 1;
 		}
