@@ -61,10 +61,12 @@ int read_fixed(int fd, void *buf, int count) {
 	int n_read = 0;
 	do {
 		int n = read(fd, buf + n_read, count - n_read);
-		if(n < 0)
-			return n;
-		else
+		if(n > 0) {
 			n_read += n;
+		} else if(n <= 0) {
+			if(n == 0) errno = EBADF;
+			return -1;
+		}
 
 	} while(n_read < count);
 
@@ -100,8 +102,8 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 
 	printf("Changing baudrates...\n");
 	/* set baudrates */
-	if(write(serial_fd, &baud, 1) < 0) goto write_err;
-	if(read(serial_fd, &b, 1) < 0) goto read_err;
+	if(write(serial_fd, &baud, 1) <= 0) goto write_err;
+	if(read(serial_fd, &b, 1) <= 0) goto read_err;
 
 	int checksum = 0;
 
@@ -115,24 +117,24 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	tcsetattr(serial_fd, TCSANOW, &tty);
 	/* OK */
 	b = 0xab;
-	if(write(serial_fd, &b, 1) < 0) goto write_err;
-	if(read(serial_fd, &b, 1) < 0) goto read_err;
+	if(write(serial_fd, &b, 1) <= 0) goto write_err;
+	if(read(serial_fd, &b, 1) <= 0) goto read_err;
 
 	int error_code;
-	if(read_fixed(serial_fd, &error_code, 4) < 0) goto read_err;
+	if(read_fixed(serial_fd, &error_code, 4) <= 0) goto read_err;
 	checksum = error_code + (error_code >> 8) + (error_code >> 16) + (error_code >> 24);
 
 	/* version name */
 	char vername[15];
-	if(read_fixed(serial_fd, vername, sizeof(vername)) < 0) goto read_err;
+	if(read_fixed(serial_fd, vername, sizeof(vername)) <= 0) goto read_err;
 	for(int i = 0; i < sizeof(vername); i++) {
 		checksum += vername[i];
 	}
 
-	if(write(serial_fd, &checksum, 1) < 0) goto write_err;
+	if(write(serial_fd, &checksum, 1) <= 0) goto write_err;
 
 	/* read check status */
-	if(read(serial_fd, &b, 1) < 0) goto read_err;
+	if(read(serial_fd, &b, 1) <= 0) goto read_err;
 	switch(b) {
 		case 'w':
 			printf("Version name: %s\n", vername);
@@ -150,12 +152,12 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	}
 
 	/* start address */
-	if(read_fixed(serial_fd, &read_address, 4) < 0) goto read_err;
+	if(read_fixed(serial_fd, &read_address, 4) <= 0) goto read_err;
 	checksum = read_address + (read_address >> 8) + (read_address >> 16) + (read_address >> 24);
-	if(write(serial_fd, &checksum, 1) < 0) goto write_err;
+	if(write(serial_fd, &checksum, 1) <= 0) goto write_err;
 
 	/* read check status */
-	if(read(serial_fd, &b, 1) < 0) goto read_err;
+	if(read(serial_fd, &b, 1) <= 0) goto read_err;
 	switch(b) {
 		case 'w':
 			printf("Read address: 0x%08X\n", read_address);
@@ -172,12 +174,12 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	}
 
 	/* read length */
-	if(read_fixed(serial_fd, &read_length, 4) < 0) goto read_err;
+	if(read_fixed(serial_fd, &read_length, 4) <= 0) goto read_err;
 	checksum = read_length + (read_length >> 8) + (read_length >> 16) + (read_length >> 24);
-	if(write(serial_fd, &checksum, 1) < 0) goto write_err;
+	if(write(serial_fd, &checksum, 1) <= 0) goto write_err;
 
 	/* read check status */
-	if(read(serial_fd, &b, 1) < 0) goto read_err;
+	if(read(serial_fd, &b, 1) <= 0) goto read_err;
 	switch(b) {
 		case 'w':
 			printf("Read length: 0x%08X\n", read_length);
@@ -209,7 +211,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		
 		uint8_t data[5];
 		for(int i = 0; i < 0x1f40; i += 5) {
-		if(read_fixed(serial_fd, data, 5) < 0) goto read_err;
+		if(read_fixed(serial_fd, data, 5) <= 0) goto read_err;
 
 			checksum += *data + data[1] + data[2] + data[3] + data[4];
 
@@ -226,10 +228,10 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 			}
 		}
 
-		if(write(serial_fd, &checksum, 1) < 0) goto write_err;
+		if(write(serial_fd, &checksum, 1) <= 0) goto write_err;
 
 		/* read check status */
-		if(read(serial_fd, &b, 1) < 0) goto read_err;
+		if(read(serial_fd, &b, 1) <= 0) goto read_err;
 		switch(b) {
 			case 'w':
 				if(verbose) printf("OK (%d%%)\n", (int)((float)total_read * 100.0f / (float)read_length));
@@ -280,10 +282,10 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 			}
 		}
 
-		if(write(serial_fd, &checksum, 1) < 0) goto write_err;
+		if(write(serial_fd, &checksum, 1) <= 0) goto write_err;
 
 		/* read check status */
-		if(read(serial_fd, &b, 1) < 0) goto read_err;
+		if(read(serial_fd, &b, 1) <= 0) goto read_err;
 		switch(b) {
 			case 'w':
 				if(verbose) printf("OK (%d%%)\n", (int)((float)total_read * 100.0f / (float)read_length));
@@ -304,9 +306,9 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	} while(total_read < read_length);
 
 	/* final */
-	if(read_fixed(serial_fd, data, 5) < 0) goto read_err;
+	if(read_fixed(serial_fd, data, 5) <= 0) goto read_err;
 	checksum = *data + data[1] + data[2] + data[3] + data[4];
-	if(write(serial_fd, &checksum, 1) < 0) goto write_err;
+	if(write(serial_fd, &checksum, 1) <= 0) goto write_err;
 
 	if(read(serial_fd, &b, 1) < 0) goto read_err;
 	switch(b) {
