@@ -201,7 +201,10 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 
 	total_read = 0;
 	do {
-		if(verbose) printf("\033[0;36m-->\033[0m 0x%08X ", read_address + total_read);
+		if(verbose) {
+			printf("\033[0;36m-->\033[0m 0x%08X ", read_address + total_read);
+			fflush(stdout);
+		}
 		checksum = 0;
 		
 		uint8_t data[5];
@@ -252,7 +255,10 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	total_read = 0;
 	read_length = 0x2000;
 	do {
-		if(verbose) printf("\033[0;36m-->\033[0m 0x%08X ", total_read);
+		if(verbose) {
+			printf("\033[0;36m-->\033[0m 0x%08X ", total_read);
+			fflush(stdout);
+		}
 
 		checksum = 0;
 		
