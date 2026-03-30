@@ -56,6 +56,21 @@ static void show_help(int err) {
 			program_name);
 }
 
+/* read fixed bytes (blocking operation) */
+int read_fixed(int fd, void *buf, int count) {
+	int n_read = 0;
+	do {
+		int n = read(fd, buf + n_read, count - n_read);
+		if(n < 0)
+			return n;
+		else
+			n_read += n;
+
+	} while(n_read < count);
+
+	return count;
+}
+
 /* ram dump function */
 int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	uint8_t b;
@@ -82,7 +97,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	tcsetattr(serial_fd, TCSANOW, &tty);
 
 	ioctl(serial_fd, TCFLSH, TCIFLUSH);
-	
+
 	printf("Changing baudrates...\n");
 	/* set baudrates */
 	write(serial_fd, &baud, 1);
@@ -104,13 +119,13 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	read(serial_fd, &b, 1);
 
 	int error_code;
-	read(serial_fd, &error_code, 4);
+	read_fixed(serial_fd, &error_code, 4);
 	checksum = error_code + (error_code >> 8) + (error_code >> 16) + (error_code >> 24);
 
 	/* version name */
 	char vername[15];
-	read(serial_fd, &vername, 15);
-	for(int i = 0; i < 15; i++) {
+	read_fixed(serial_fd, vername, sizeof(vername));
+	for(int i = 0; i < sizeof(vername); i++) {
 		checksum += vername[i];
 	}
 
@@ -135,7 +150,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	}
 
 	/* start address */
-	read(serial_fd, &read_address, 4);
+	read_fixed(serial_fd, &read_address, 4);
 	checksum = read_address + (read_address >> 8) + (read_address >> 16) + (read_address >> 24);
 	write(serial_fd, &checksum, 1);
 
@@ -157,7 +172,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	}
 
 	/* read length */
-	read(serial_fd, &read_length, 4);
+	read_fixed(serial_fd, &read_length, 4);
 	checksum = read_length + (read_length >> 8) + (read_length >> 16) + (read_length >> 24);
 	write(serial_fd, &checksum, 1);
 
@@ -179,7 +194,6 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	}
 
 	uint8_t data[5];
-	int n_read;
 	int total_read;
 
 	/* dumping RAM */
@@ -192,10 +206,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		
 		uint8_t data[5];
 		for(int i = 0; i < 0x1f40; i += 5) {
-			n_read = 0;
-			do {
-				n_read += read(serial_fd, (uint8_t *)&data + n_read, 5 - n_read);
-			} while(n_read < 5);
+			read_fixed(serial_fd, data, 5);
 
 			checksum += *data + data[1] + data[2] + data[3] + data[4];
 
@@ -246,10 +257,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		checksum = 0;
 		
 		for(int i = 0; i < 0x1f40; i += 5) {
-			n_read = 0;
-			do {
-				n_read += read(serial_fd, (uint8_t *)&data + n_read, 5 - n_read);
-			} while(n_read < 5);
+			read_fixed(serial_fd, data, 5);
 
 			checksum += *data + data[1] + data[2] + data[3] + data[4];
 
@@ -290,10 +298,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	} while(total_read < read_length);
 
 	/* final */
-	n_read = 0;
-	do {
-		n_read += read(serial_fd, (uint8_t *)&data + n_read, 5 - n_read);
-	} while(n_read < 5);
+	read_fixed(serial_fd, data, 5);
 	checksum = *data + data[1] + data[2] + data[3] + data[4];
 	write(serial_fd, &checksum, 1);
 
