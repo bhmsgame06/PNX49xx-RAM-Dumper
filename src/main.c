@@ -83,7 +83,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 	int serial_fd = open(serial_device, O_RDWR | O_NOCTTY);
 	if(serial_fd < 0) {
 		perror(serial_device);
-		return 2;
+		return -1;
 	}
 	struct termios tty;
 	tcgetattr(serial_fd, &tty);
@@ -107,7 +107,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 
 	if(b != 0x11) {
 		fprintf(stderr, "Wrong response: 0x%02x\n", b);
-		return 1;
+		return -1;
 	}
 
 	cfsetispeed(&tty, baudrate_table[baud - 0xab]);
@@ -146,7 +146,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		default:
 			fprintf(stderr, "Wrong check status response (version name): 0x%02X\n", b);
 			close(serial_fd);
-			return 1;
+			return -1;
 	}
 
 	/* start address */
@@ -168,7 +168,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		default:
 			fprintf(stderr, "Wrong check status response (read address): 0x%02X\n", b);	
 			close(serial_fd);
-			return 1;
+			return -1;
 	}
 
 	/* read length */
@@ -190,7 +190,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		default:
 			fprintf(stderr, "Wrong check status response (read length): 0x%02X\n", b);
 			close(serial_fd);
-			return 1;
+			return -1;
 	}
 
 	uint8_t data[5];
@@ -239,7 +239,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 			default:
 				fprintf(stderr, "Wrong check status response (RAM dumping): 0x%02X\n", b);
 				close(serial_fd);
-				return 1;
+				return -1;
 		}
 
 		if(blk_delay > 0) usleep(blk_delay);
@@ -290,7 +290,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 			default:
 				fprintf(stderr, "Wrong check status response (FIQ vectors dumping): 0x%02X\n", b);
 				close(serial_fd);
-				return 1;
+				return -1;
 		}
 
 		if(blk_delay > 0) usleep(blk_delay);
@@ -315,7 +315,7 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 		default:
 			fprintf(stderr, "Wrong check status response (final): 0x%02X\n", b);
 			close(serial_fd);
-			return 1;
+			return -1;
 	}
 
 	close(serial_fd);
@@ -324,11 +324,11 @@ int ram_dump(FILE *dump_fd, FILE *vectors_dump_fd) {
 
 read_err:
 	perror("read()");
-	return 1;
+	return -1;
 
 write_err:
 	perror("write()");
-	return 1;
+	return -1;
 }
 
 /* main function */
@@ -397,22 +397,18 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	int status = 0;
+	int status;
 	switch(ram_dump(dump_fd, vectors_dump_fd)) {
 		case 0:
 			status = 0;
 			break;
 
-		case 1:
+		case 'D':
+			fprintf(stderr, "Wrong checksum!\n");
 			status = 1;
 			break;
 
-		case 2:
-			status = errno;
-			break;
-
-		case 'D':
-			fprintf(stderr, "Wrong checksum!\n");
+		default:
 			status = 1;
 			break;
 	}
