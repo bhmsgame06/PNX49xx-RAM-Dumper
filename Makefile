@@ -18,7 +18,7 @@ ramdump-49xx: $(OBJS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 install:
-	install $(BUILD_DIR)/ramdump-49xx $(PREFIX)/bin
+	install -Dm755 $(BUILD_DIR)/ramdump-49xx $(PREFIX)/bin
 
 clean:
 	rm -f $(OBJS)
