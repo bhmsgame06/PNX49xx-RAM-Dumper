@@ -6,6 +6,7 @@ CC := gcc
 CFLAGS := -O2
 LD := gcc
 LDFLAGS := $(LIBS)
+PREFIX := /usr/local
 
 all: ramdump-49xx
 
@@ -17,7 +18,7 @@ ramdump-49xx: $(OBJS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 install:
-	install $(BUILD_DIR)/ramdump-49xx /usr/local/bin
+	install $(BUILD_DIR)/ramdump-49xx $(PREFIX)/bin
 
 clean:
 	rm -f $(OBJS)
